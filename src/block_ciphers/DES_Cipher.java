@@ -134,7 +134,7 @@ public class DES_Cipher {
 		// Check no. of arguments
 		if (args.length < 2) {
 			System.out.println(
-					"Usage: java DES_Cipher plaintext key");
+					"Usage: java DES_Cipher plaintext key\n");
 		}
 
 		pFile = new File(args[0]);
