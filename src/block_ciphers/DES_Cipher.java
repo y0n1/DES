@@ -324,9 +324,10 @@ public class DES_Cipher {
 		 */
 		byte[] B = new byte[8];
 		for (int i = 0; i < 8; i++) {
-			long mask = 0x0000000_0000002FL;
-			B[i] = (byte)(Long.rotateLeft(t, (i + 1) * 6) & mask);
-			// WARNING: B[i] has its bits stored in Big-Endian.
+			long mask = 0xFC00000000000000L >>> 6 * i;
+			mask &= t;
+			B[i] = (byte)Long.rotateLeft(mask, 6 * (i + 1));
+			// WARNING: B[i] has the two leftmost bits set to 0 always.
 		}
 
 		/* T'' = (S1(B1),S2(B2),...,S8(B8))
