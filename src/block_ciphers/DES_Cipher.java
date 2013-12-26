@@ -247,7 +247,7 @@ public class DES_Cipher {
 			debug48BitsWord(k, ++i, "K", 2);
 		}
 	}
-
+	
 	private static void debug28BitsWord(int bitsWord, int idx, String name, int radix) {
 		if (radix == 2) {
 			String binaryString = Integer.toBinaryString(bitsWord);
@@ -314,19 +314,25 @@ public class DES_Cipher {
 	}
 
 	private static int f(int r_prev, long key) {
+		System.out.printf("R = 0x%016x\n", r_prev);
+		System.out.printf("K = 0x%016x\n", key);
 		// Expand R_i−1 = r1,r2,...,r32 from 32 to 48 bits using E.
 		long t = expand(r_prev);
 		// T' = T xor Ki
 		t ^= key;
+		System.out.printf("T XOR K = 0x%016x\n", t);
 		
 		/* Represent T as eight words (Bi) of 6-bit characters each:
 		 * T' = (B1, B2, ..., B8).
 		 */
 		byte[] B = new byte[8];
 		for (int i = 0; i < 8; i++) {
-			long mask = 0xFC00000000000000L >>> 6 * i;
+			long mask = 0xFC000000_00000000L >>> 6 * i;
 			mask &= t;
-			B[i] = (byte)Long.rotateLeft(mask, 6 * (i + 1));
+			System.out.printf("&Mask %d = 0x%016x", i+1, mask);
+			mask = Long.rotateLeft(mask, 6 * (i + 1));
+			B[i] = (byte) mask;
+			System.out.printf(" --> B%d = 0x%x\n", i+1, B[i]);
 			// WARNING: B[i] has the two leftmost bits set to 0 always.
 		}
 
@@ -346,6 +352,7 @@ public class DES_Cipher {
 			j = (msb << 1) | lsb;
 
 			SB[i] = S_BOX[i][j][mid];
+			System.out.printf("SB%d = 0x%02x\n", i+1, SB[i]);
 		}
 		
 		/* T''' = P(T''). (Use P to permute the 32 bits of T'' = t1,t2,...,t32 
@@ -353,8 +360,8 @@ public class DES_Cipher {
 		 */
 		int result = 0;
 		for (int i = 0; i < 8; i++) {
-			result |= SB[i]; // SB[i] uses only 4 bits out of 8 - No sign ext.
 			result <<= 4;
+			result |= SB[i]; // SB[i] uses only 4 bits out of 8 - No sign ext.
 		}
 		result = (int)(permutate((long)result << 32, P) >>> 32);
 		return result;
