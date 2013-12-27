@@ -13,8 +13,10 @@ import java.io.*;
  */
 public class DES_Cipher {
 
+	private static String op;
+	
 	private static File pFile, kFile;
-
+	
 	private static RandomAccessFile keyFile, plaintextFile;
 
 	private static long[] subKeys;
@@ -132,24 +134,25 @@ public class DES_Cipher {
 	public static void main(String[] args) {
 
 		// Check no. of arguments
-		if (args.length < 2) {
+		if (args.length < 3) {
 			System.out.println(
-					"Usage: java DES_Cipher plaintext key\n");
+					"Usage: java DES_Cipher msg key (encrypt|decrypt)\n");
 		}
 
 		pFile = new File(args[0]);
 		kFile = new File(args[1]);
+		op = args[2];
 
 		try {
 			// STAGE #1 - Key Scheduler
 			long key = readKey(kFile);
 			System.out.printf("Key:\t0x%016x\n", key);
 			long pk = permutate(key, PC1);
-			System.out.printf("PK:\t0x%016x\n", pk);
+			//System.out.printf("PK:\t0x%016x\n", pk);
 			int c_0 = getLowerBits(28, pk);
-			debug28BitsWord(c_0, 0, "C", 2);
+			//debug28BitsWord(c_0, 0, "C", 2);
 			int d_0 = getHigherBits(28, pk);
-			debug28BitsWord(d_0, 0, "D", 2);
+			//debug28BitsWord(d_0, 0, "D", 2);
 			generateKeys(c_0, d_0);
 			debugKeys(subKeys);
 
@@ -157,18 +160,22 @@ public class DES_Cipher {
 			long block = readMsg(pFile);
 			System.out.printf("Block: \t 0x%016x\n", block);
 			long ip = permutate(block, IP);
-			System.out.printf("IP:\t0x%016x\n", ip);
+			//System.out.printf("IP:\t0x%016x\n", ip);
 			int l_0 = getLowerBits(32, ip);
-			System.out.printf("L0:\t0x%08x\n", l_0);
+			//System.out.printf("L0:\t0x%08x\n", l_0);
 			int r_0 = getHigherBits(32, ip);
-			System.out.printf("R0:\t0x%08x\n", r_0);
+			//System.out.printf("R0:\t0x%08x\n", r_0);
 
 			// STAGE #3 - 16 Rounds
+			int k  = 0;
 			int l_next = 0, l_prev = l_0;
 			int r_next = 0, r_prev = r_0;
+			boolean isEncrypt = op.equals("encrypt");
+			
 			for (int i = 1; i <= 16; i++) {
+				k = isEncrypt ? i - 1 : 16 - i; // Check operation mode
 				l_next = r_prev;
-				r_next = l_prev ^ f(r_prev, subKeys[i - 1]);
+				r_next = l_prev ^ f(r_prev, subKeys[k]);
 
 				// Update next halves
 				l_prev = l_next;
@@ -231,8 +238,8 @@ public class DES_Cipher {
 		int d_next, d_prev = d_0;
 		for (int i = 1; i <= subKeys.length; i++) {
 			int v = (i == 1 || i == 2 || i == 9 || i == 16) ? 1 : 2;
-			c_next = leftRotate(c_prev, v); debug28BitsWord(c_next, i, "C", 2);
-			d_next = leftRotate(d_prev, v); debug28BitsWord(d_next, i, "D", 2);
+			c_next = leftRotate(c_prev, v); //debug28BitsWord(c_next, i, "C", 2);
+			d_next = leftRotate(d_prev, v); //debug28BitsWord(d_next, i, "D", 2);
 			long k_i = concatenate(c_next, d_next);
 			subKeys[i - 1] = permutate(k_i, PC2);
 			c_prev = c_next;
@@ -314,13 +321,10 @@ public class DES_Cipher {
 	}
 
 	private static int f(int r_prev, long key) {
-		System.out.printf("R = 0x%016x\n", r_prev);
-		System.out.printf("K = 0x%016x\n", key);
 		// Expand R_i−1 = r1,r2,...,r32 from 32 to 48 bits using E.
 		long t = expand(r_prev);
 		// T' = T xor Ki
 		t ^= key;
-		System.out.printf("T XOR K = 0x%016x\n", t);
 		
 		/* Represent T as eight words (Bi) of 6-bit characters each:
 		 * T' = (B1, B2, ..., B8).
@@ -329,10 +333,10 @@ public class DES_Cipher {
 		for (int i = 0; i < 8; i++) {
 			long mask = 0xFC000000_00000000L >>> 6 * i;
 			mask &= t;
-			System.out.printf("&Mask %d = 0x%016x", i+1, mask);
+			//System.out.printf("&Mask %d = 0x%016x", i+1, mask);
 			mask = Long.rotateLeft(mask, 6 * (i + 1));
 			B[i] = (byte) mask;
-			System.out.printf(" --> B%d = 0x%x\n", i+1, B[i]);
+			//System.out.printf(" --> B%d = 0x%x\n", i+1, B[i]);
 			// WARNING: B[i] has the two leftmost bits set to 0 always.
 		}
 
@@ -352,7 +356,7 @@ public class DES_Cipher {
 			j = (msb << 1) | lsb;
 
 			SB[i] = S_BOX[i][j][mid];
-			System.out.printf("SB%d = 0x%02x\n", i+1, SB[i]);
+			//System.out.printf("SB%d = 0x%02x\n", i+1, SB[i]);
 		}
 		
 		/* T''' = P(T''). (Use P to permute the 32 bits of T'' = t1,t2,...,t32 

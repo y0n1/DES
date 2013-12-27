@@ -1,0 +1,4 @@
+[CONFIG]
+Operation=Encrypt|Decrypt|Verify.
+Format=ASCII|Radix64,
+Mode=ECB|CBC.
