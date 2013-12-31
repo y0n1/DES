@@ -1,17 +1,18 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * The Data Encryption Standard (DES), known as the Data Encryption Algorithm (DEA)
+ * by ANSI and the DEA-1 by the ISO, has been a worldwide standard for 20 years.
+ * Although it is showing signs of old age, it has held up remarkably well against
+ * years of cryptanalysis and is still secure against all  but possibly the most
+ * powerful of adversaries.
  */
 package block_ciphers;
 
 import java.io.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
- *
- * @author Yoni
+ * A modest implementation of DES cryptosystem.
+ * <p>
+ * @author Yoni Kilzi & Nimrod Shlagman
  */
 public class DES_Cipher {
 
@@ -144,7 +145,7 @@ public class DES_Cipher {
 		// Check # of arguments
 		if (args.length < 3) {
 			System.out.println(
-					"Usage: java DES_Cipher input output key (encrypt|decrypt)\n");
+				"Usage: java DES_Cipher input output key (encrypt|decrypt)\n");
 		}
 
 		// Init
@@ -165,7 +166,7 @@ public class DES_Cipher {
 				break;
 			default:
 				System.err.println("Invalid Operation mode!\n"
-						+ "Valid options are: encrypt|decrypt|verify");
+					+ "Valid options are: encrypt|decrypt|verify");
 				throw new AssertionError();
 		}
 
@@ -178,13 +179,13 @@ public class DES_Cipher {
 			int c_0 = getLowerBits(28, pk);
 			int d_0 = getHigherBits(28, pk);
 			generateKeys(c_0, d_0);
-			//debugKeys(); // TODO: Don't leave me this way!
+			//debugKeys(); // TODO: add some debug flag / CLi arg.
 
 			int count = 0;
 			while (readBlock(inFile) != -1) {
 
 				// STAGE #2 - Encryption Algo.
-				System.out.printf("Block %2d: 0x%016x ",++count, block);
+				System.out.printf("Block %2d: 0x%016x ", ++count, block);
 				long ip = permutate(block, IP);
 				int l_0 = getLowerBits(32, ip);
 				int r_0 = getHigherBits(32, ip);
@@ -193,7 +194,7 @@ public class DES_Cipher {
 				int l_next = 0, l_prev = l_0;
 				int r_next = 0, r_prev = r_0;
 				for (int i = 1, k; i <= 16; i++) {
-					k = (op_code == 1) ? i - 1 : 16 - i; // if op_code == 3 we won't get here
+					k = (op_code == 1) ? i - 1 : 16 - i; // TODO: What if op_code == 3?
 					l_next = r_prev;
 					r_next = l_prev ^ f(r_prev, subKeys[k]);
 
@@ -223,12 +224,13 @@ public class DES_Cipher {
 	/**
 	 * Utility method used to properly perform selection/permutation of the bits
 	 * specified by the given table.
-	 *
-	 * @param v - the input word to select/permutate its bits.
+	 * <p>
+	 * @param v     - the input word to select/permutate its bits.
 	 * @param table - a hard-coded table or list specifying which bits should be
-	 * selected from the input word.
+	 *              selected from the input word.
+	 * <p>
 	 * @return the selected bits from the input word. The LSB is at the leftmost
-	 * position.
+	 *         position.
 	 */
 	private static long permutate(long v, byte[] table) {
 		long result = 0;
@@ -240,9 +242,10 @@ public class DES_Cipher {
 
 	/**
 	 * Utility method for getting the low bits from a word of n-bits
-	 *
+	 * <p>
 	 * @param nBits - the number of bits in the word
-	 * @param word - a word of bits
+	 * @param word  - a word of bits
+	 * <p>
 	 * @return - the low bits part of the given word
 	 */
 	private static int getLowerBits(int nBits, long word) {
@@ -255,9 +258,10 @@ public class DES_Cipher {
 
 	/**
 	 * Utility method for getting the high bits from a word of n-bits
-	 *
+	 * <p>
 	 * @param nBits - the number of bits in the word
-	 * @param word - a word of bits
+	 * @param word  - a word of bits
+	 * <p>
 	 * @return - the high bits part of the given word
 	 */
 	private static int getHigherBits(int nBits, long word) {
@@ -267,9 +271,10 @@ public class DES_Cipher {
 
 	/**
 	 * Rotates left a 28bit word.
-	 *
-	 * @param val - the 28bits word.
+	 * <p>
+	 * @param val      - the 28bits word.
 	 * @param distance - the number of positions to rotate.
+	 * <p>
 	 * @return - a 28bit word.
 	 */
 	private static int leftRotate(int val, int distance) {
@@ -283,11 +288,11 @@ public class DES_Cipher {
 
 	/**
 	 * Performs concatenation of the two C and D parts of each sub-key.
-	 *
+	 * <p>
 	 * @param c_i
-	 * @param d_i
+	 * @param d_i <p>
 	 * @return a 'long' containing a 48bit key. The LSB is at the leftmost
-	 * position.
+	 *         position.
 	 */
 	private static long concatenate(int c_i, int d_i) {
 		long trimmedC = c_i >>> 4;
@@ -300,7 +305,7 @@ public class DES_Cipher {
 
 	/**
 	 * Generates the 16 sub-keys. Each key is a 48bit long word.
-	 *
+	 * <p>
 	 * @param c_0 - the lowest 28 bits corresponding to the original key.
 	 * @param d_0 - the highest 28 bits corresponding to the original key.
 	 */
@@ -332,12 +337,12 @@ public class DES_Cipher {
 
 	/**
 	 * Prints the contents of a 28bit word.
-	 *
+	 * <p>
 	 * @param bitsWord - a 28bit word such that its LSB is at the leftmost
-	 * position.
-	 * @param idx - an index (For reference only).
-	 * @param name - a name (For reference only).
-	 * @param radix - can be either 2 for binary or 16 for hexadecimal.
+	 *                 position.
+	 * @param idx      - an index (For reference only).
+	 * @param name     - a name (For reference only).
+	 * @param radix    - can be either 2 for binary or 16 for hexadecimal.
 	 */
 	private static void debug28BitsWord(int bitsWord, int idx, String name, int radix) {
 		if (radix == 2) {
@@ -357,12 +362,12 @@ public class DES_Cipher {
 
 	/**
 	 * Prints the contents of a 48bit word.
-	 *
+	 * <p>
 	 * @param bitsWord - a 48bit word such that its LSB is at the leftmost
-	 * position.
-	 * @param idx - an index (For reference only).
-	 * @param name - a name (For reference only).
-	 * @param radix - can be either 2 for binary or 16 for hexadecimal.
+	 *                 position.
+	 * @param idx      - an index (For reference only).
+	 * @param name     - a name (For reference only).
+	 * @param radix    - can be either 2 for binary or 16 for hexadecimal.
 	 */
 	private static void debug48BitsWord(long bitsWord, int idx, String name, int radix) {
 		if (radix == 2) {
@@ -381,10 +386,12 @@ public class DES_Cipher {
 
 	/**
 	 * Reads the key used to encode/decode the message from the specified file.
-	 *
+	 * <p>
 	 * @param kFile - The file containing the key. The key must be an
-	 * hexadecimal word of length 16.
+	 *              hexadecimal word of length 16.
+	 * <p>
 	 * @return a 'long' containing the bits of the key.
+	 * <p>
 	 * @throws FileNotFoundException - If the file could not be found.
 	 */
 	private static long readKey(File kFile) throws FileNotFoundException {
@@ -394,8 +401,8 @@ public class DES_Cipher {
 			key = Long.parseLong(keyFile.readLine(), 16);
 		} catch (NumberFormatException ex) {
 			System.err.println(
-					"Invalid key format!\n"
-					+ " Check the file containing the key");
+				"Invalid key format!\n"
+				+ " Check the file containing the key");
 		} catch (IOException ex) {
 			System.err.println("I/O Error: Failed to read the file");
 		}
@@ -404,10 +411,12 @@ public class DES_Cipher {
 
 	/**
 	 * Reads a 64-bit block (8 bytes) from the file containing the message.
-	 *
+	 * <p>
 	 * @param pFile the file containing the message.
+	 * <p>
 	 * @return the total number of bytes read into the buffer, or -1 if there is
-	 * no more data because the end of this file has been reached.
+	 *         no more data because the end of this file has been reached.
+	 * <p>
 	 * @throws FileNotFoundException - if the file couldn't be found.
 	 */
 	private static int readBlock(File pFile) throws FileNotFoundException {
@@ -431,9 +440,10 @@ public class DES_Cipher {
 	/**
 	 * Performs the 'f' function part in the DES Algorithm.\n See spec. for more
 	 * details.
-	 *
+	 * <p>
 	 * @param r_prev - a 32bit word.
-	 * @param key - a 48bit word, containing the current key.
+	 * @param key    - a 48bit word, containing the current key.
+	 * <p>
 	 * @return - a 32bit word such that,\n R_i = E(R_i-1) XOR K_i.
 	 */
 	private static int f(int r_prev, long key) {
@@ -442,8 +452,9 @@ public class DES_Cipher {
 		// T' = T xor Ki
 		t ^= key;
 
-		/* Represent T as eight words (Bi) of 6-bit characters each:
-		 * T' = (B1, B2, ..., B8).
+		/*
+		 * Represent T as eight words (Bi) of 6-bit characters each: T' = (B1,
+		 * B2, ..., B8).
 		 */
 		byte[] B = new byte[8];
 		for (int i = 0; i < 8; i++) {
@@ -453,12 +464,11 @@ public class DES_Cipher {
 			B[i] = (byte) mask;
 		}
 
-		/* T'' = (S1(B1),S2(B2),...,S8(B8))
-		 * (Here Si(Bi) maps Bi = b1b2...b6 to the 4-bit entry in row r and
-		 * column c of Si, where:
-		 *		r = 2 * b1 + b6, and
-		 *		b2,b3,b4,b5 is the radix-2 representation of 0 <= c <= 15.
-		 * Thus S1(011011) yields r=1, c=13, and output 5 = 0101.)
+		/*
+		 * T'' = (S1(B1),S2(B2),...,S8(B8)) (Here Si(Bi) maps Bi = b1b2...b6 to
+		 * the 4-bit entry in row r and column c of Si, where: r = 2 * b1 + b6,
+		 * and b2,b3,b4,b5 is the radix-2 representation of 0 <= c <= 15. Thus
+		 * S1(011011) yields r=1, c=13, and output 5 = 0101.)
 		 */
 		int j;
 		byte[] SB = new byte[8];
@@ -471,7 +481,8 @@ public class DES_Cipher {
 			SB[i] = S_BOX[i][j][mid];
 		}
 
-		/* T''' = P(T''). (Use P to permute the 32 bits of T'' = t1,t2,...,t32 
+		/*
+		 * T''' = P(T''). (Use P to permute the 32 bits of T'' = t1,t2,...,t32
 		 * yielding t16,t7,...,t25.)
 		 */
 		int result = 0;
@@ -485,11 +496,12 @@ public class DES_Cipher {
 
 	/**
 	 * Exchanges between the 32 lowest bits and the 32 highest bits.
-	 *
+	 * <p>
 	 * @param l - the 32 lowest bits
 	 * @param r - the 32 highest bits
+	 * <p>
 	 * @return a 'long' where the first (from left to right) 32 bits correspond
-	 * to 'r' and the last 32 bits correspond to 'l'.
+	 *         to 'r' and the last 32 bits correspond to 'l'.
 	 */
 	private static long exchange(int l, int r) {
 		long result = (((long) r) << 32) >>> 32;
@@ -500,8 +512,9 @@ public class DES_Cipher {
 
 	/**
 	 * Expands from 32bit to 48bit word as per E table.
-	 *
+	 * <p>
 	 * @param r_prev - the 32bit word.
+	 * <p>
 	 * @return a 'long' where its leftmost bit is the LSB in the 48bit word.
 	 */
 	private static long expand(int r_prev) {
@@ -517,15 +530,16 @@ public class DES_Cipher {
 
 	/**
 	 * Utility method that facilitates access to the n-th bit of a given word.
-	 *
+	 * <p>
 	 * @param n - a value in the mathematical range: [1,32];
 	 * @param w - a 32bit word (an 'int').
+	 * <p>
 	 * @return TRUE if the n-th bit from the given word is 1 or FALSE otherwise;
 	 */
 	private static boolean getBit(byte n, int w) {
 		if (n > Integer.SIZE || n < 0) {
 			String msg = "First argument is out of range!\n"
-					+ "Valid range is: 1 <= n <= 32";
+				+ "Valid range is: 1 <= n <= 32";
 			throw new IllegalArgumentException(msg);
 		}
 		return ((w >>> (32 - n)) & 1) == 1;
@@ -533,15 +547,16 @@ public class DES_Cipher {
 
 	/**
 	 * Utility method that facilitates access to the n-th bit of a given word.
-	 *
+	 * <p>
 	 * @param n - a value in the mathematical range: [1,64];
 	 * @param w - a 64bit word (an 'long').
+	 * <p>
 	 * @return TRUE if the n-th bit from the given word is 1 or FALSE otherwise;
 	 */
 	private static boolean getBit(byte n, long w) {
 		if (n > Long.SIZE || n < 0) {
 			String msg = "First argument is out of range!\n"
-					+ "Valid range is: 1 <= n <= 64";
+				+ "Valid range is: 1 <= n <= 64";
 			throw new IllegalArgumentException(msg);
 		}
 		return ((w >>> (64 - n)) & 1) == 1;
@@ -550,8 +565,9 @@ public class DES_Cipher {
 	/**
 	 * Converts the contents of the given buffer into a 64bit word, such that
 	 * the LSB is at the leftmost position.
-	 *
+	 * <p>
 	 * @param buffer a buffer containing 8 bytes.
+	 * <p>
 	 * @return a 'long' representing the bytes in the given buffer.
 	 */
 	private static long parse64BitWord(byte[] buffer) {
