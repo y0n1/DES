@@ -6,6 +6,8 @@
 package block_ciphers;
 
 import java.io.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -13,15 +15,17 @@ import java.io.*;
  */
 public class DES_Cipher {
 
+	private static long block;
+
 	private static int op_code;
-	
+
 	private static int mode; // TODO
-	
+
 	private static int format; // TODO
 
-	private static File pFile, kFile;
+	private static File inFile, outFile, kFile;
 
-	private static RandomAccessFile keyFile, plaintextFile;
+	private static RandomAccessFile keyFile, plaintextFile, outputFile;
 
 	private static long[] subKeys;
 
@@ -140,12 +144,16 @@ public class DES_Cipher {
 		// Check # of arguments
 		if (args.length < 3) {
 			System.out.println(
-					"Usage: java DES_Cipher msg key (encrypt|decrypt)\n");
+					"Usage: java DES_Cipher input output key (encrypt|decrypt)\n");
 		}
 
-		pFile = new File(args[0]);
-		kFile = new File(args[1]);
-		switch (args[2]) {
+		// Init
+		inFile = new File(args[0]);
+		outFile = new File(args[1]);
+		kFile = new File(args[2]);
+
+		// Check operation mode
+		switch (args[3]) {
 			case "encrypt":
 				op_code = 1;
 				break;
@@ -156,47 +164,57 @@ public class DES_Cipher {
 				op_code = 3;
 				break;
 			default:
+				System.err.println("Invalid Operation mode!\n"
+						+ "Valid options are: encrypt|decrypt|verify");
 				throw new AssertionError();
 		}
 
 		try {
+
 			// STAGE #1 - Key Scheduler
 			long key = readKey(kFile);
-			System.out.printf("Key:\t0x%016x\n", key);
+			System.out.printf("Key: 0x%016x\n", key);
 			long pk = permutate(key, PC1);
 			int c_0 = getLowerBits(28, pk);
 			int d_0 = getHigherBits(28, pk);
 			generateKeys(c_0, d_0);
 			//debugKeys(); // TODO: Don't leave me this way!
 
-			// STAGE #2 - Encryption Algo.
-			long block = readMsg(pFile);
-			System.out.printf("Block:\t0x%016x\n", block);
-			long ip = permutate(block, IP);
-			int l_0 = getLowerBits(32, ip);
-			int r_0 = getHigherBits(32, ip);
+			int count = 0;
+			while (readBlock(inFile) != -1) {
 
-			// STAGE #3 - 16 Rounds
-			int l_next = 0, l_prev = l_0;
-			int r_next = 0, r_prev = r_0;
+				// STAGE #2 - Encryption Algo.
+				System.out.printf("Block %2d: 0x%016x ",++count, block);
+				long ip = permutate(block, IP);
+				int l_0 = getLowerBits(32, ip);
+				int r_0 = getHigherBits(32, ip);
 
-			// Check operation mode
-			for (int i = 1, k = 0; i <= 16; i++) {
-				k = (op_code == 1) ? i - 1 : 16 - i; // if op_code == 3 we won't get here
-				l_next = r_prev;
-				r_next = l_prev ^ f(r_prev, subKeys[k]);
+				// STAGE #3 - 16 Rounds
+				int l_next = 0, l_prev = l_0;
+				int r_next = 0, r_prev = r_0;
+				for (int i = 1, k; i <= 16; i++) {
+					k = (op_code == 1) ? i - 1 : 16 - i; // if op_code == 3 we won't get here
+					l_next = r_prev;
+					r_next = l_prev ^ f(r_prev, subKeys[k]);
 
-				// Update next halves
-				l_prev = l_next;
-				r_prev = r_next;
+					// Update next halves
+					l_prev = l_next;
+					r_prev = r_next;
+				}
+				long result = exchange(l_next, r_next);
+				result = permutate(result, IPINV);
+
+				// display the processed 64bit block
+				System.out.printf("--> 0x%016x\n", result);
+				writeBlock(outFile, result);
+
 			}
-			long result = exchange(l_next, r_next);
-			result = permutate(result, IPINV);
-
-			// display the processed 64bit block
-			System.out.printf("Block*:\t0x%016x\n", result);
+			plaintextFile.close();
+			outputFile.close();
 
 		} catch (FileNotFoundException ex) {
+			System.err.println(ex.getMessage());
+		} catch (IOException ex) {
 			System.err.println(ex.getMessage());
 		}
 
@@ -209,7 +227,8 @@ public class DES_Cipher {
 	 * @param v - the input word to select/permutate its bits.
 	 * @param table - a hard-coded table or list specifying which bits should be
 	 * selected from the input word.
-	 * @return the selected bits from the input word. The LSB is at the leftmost position.
+	 * @return the selected bits from the input word. The LSB is at the leftmost
+	 * position.
 	 */
 	private static long permutate(long v, byte[] table) {
 		long result = 0;
@@ -384,21 +403,29 @@ public class DES_Cipher {
 	}
 
 	/**
-	 * Reads a 64 bit block from the file containing the message.
+	 * Reads a 64-bit block (8 bytes) from the file containing the message.
 	 *
 	 * @param pFile the file containing the message.
-	 * @return a 'long' containing an 8 bytes (64 bits) block from the message.
+	 * @return the total number of bytes read into the buffer, or -1 if there is
+	 * no more data because the end of this file has been reached.
 	 * @throws FileNotFoundException - if the file couldn't be found.
 	 */
-	private static long readMsg(File pFile) throws FileNotFoundException {
-		plaintextFile = new RandomAccessFile(pFile, "r");
-		long block = 0;
+	private static int readBlock(File pFile) throws FileNotFoundException {
+
+		// Check initialization
+		if (plaintextFile == null) {
+			plaintextFile = new RandomAccessFile(pFile, "r");
+		}
+
+		byte[] buffer = new byte[8];
+		int bytesRead = 0;
 		try {
-			block = plaintextFile.readLong();
+			bytesRead = plaintextFile.read(buffer);
+			block = parse64BitWord(buffer);
 		} catch (IOException ex) {
 			System.err.println("I/O Error: Failed to fetch next block!");
 		}
-		return block;
+		return bytesRead;
 	}
 
 	/**
@@ -518,6 +545,35 @@ public class DES_Cipher {
 			throw new IllegalArgumentException(msg);
 		}
 		return ((w >>> (64 - n)) & 1) == 1;
+	}
+
+	/**
+	 * Converts the contents of the given buffer into a 64bit word, such that
+	 * the LSB is at the leftmost position.
+	 *
+	 * @param buffer a buffer containing 8 bytes.
+	 * @return a 'long' representing the bytes in the given buffer.
+	 */
+	private static long parse64BitWord(byte[] buffer) {
+		int d = (64 - buffer.length);
+		long result = 0;
+		for (int i = 0; i < buffer.length; i++) {
+			result <<= buffer.length;
+			long currByte = (((long) buffer[i] << d) >>> d);
+			result |= currByte;
+		}
+		return result;
+	}
+
+	private static void writeBlock(File outFile, long result) throws FileNotFoundException {
+		if (outputFile == null) {
+			outputFile = new RandomAccessFile(outFile, "rw");
+		}
+		try {
+			outputFile.writeLong(result);
+		} catch (IOException ex) {
+			System.err.println("I/O Error: Couldn't write current block.");
+		}
 	}
 
 }
