@@ -166,7 +166,8 @@ public class DES_Cipher {
 				break;
 			default:
 				System.err.println("Invalid Operation mode!\n"
-					+ "Valid options are: encrypt|decrypt|verify");
+					+ "Valid options are: encrypt|decrypt|verify\n"
+					+ "Check configuration file");
 				throw new AssertionError();
 		}
 
