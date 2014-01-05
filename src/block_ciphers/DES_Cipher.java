@@ -8,6 +8,7 @@
 package block_ciphers;
 
 import java.io.*;
+import java.util.Properties;
 
 /**
  * A modest implementation of DES cryptosystem.
@@ -141,35 +142,59 @@ public class DES_Cipher {
 	};
 
 	public static void main(String[] args) {
+		
+		String fileName = "config";
+		Properties prop = new Properties();
+		try {
+			
+			//Load properties from config file
+			InputStream is = new FileInputStream(fileName);
+			prop.load(is);
+			
+			// Debug printing, TODO: remove this section
+			System.out.println("DEBUG_Operation = " + prop.getProperty("Operation"));
+			System.out.println("DEBUG_Format = " + prop.getProperty("Format"));
+			System.out.println("DEBUG_Mode = " + prop.getProperty("Mode"));
+			
+			// Get operation mode from config file, set "Encrypt" as default
+			String operation = prop.getProperty("Operation", "Encrypt");
+			
+			// Check # of arguments
+			if (args.length < 3) {
+				System.out.println(
+					"Usage: java DES_Cipher input output key (encrypt|decrypt)\n");
+			}
 
-		// Check # of arguments
-		if (args.length < 3) {
-			System.out.println(
-				"Usage: java DES_Cipher input output key (encrypt|decrypt)\n");
+			// Init
+			inFile = new File(args[0]);
+			outFile = new File(args[1]);
+			kFile = new File(args[2]);
+
+			// Check operation mode
+			switch (operation) {
+				case "Encrypt":
+					op_code = 1;
+					break;
+				case "Decrypt":
+					op_code = 2;
+					break;
+				case "Verify":
+					op_code = 3;
+					break;
+				default:
+					System.err.println("Invalid Operation mode!\n"
+						+ "Valid options are: encrypt|decrypt|verify\n"
+						+ "Check configuration file");
+					throw new AssertionError();
+			}
+			
+		} catch (FileNotFoundException ex) {
+			System.err.println(ex.getMessage());
+		} catch (IOException ex) {
+			System.err.println(ex.getMessage());
 		}
-
-		// Init
-		inFile = new File(args[0]);
-		outFile = new File(args[1]);
-		kFile = new File(args[2]);
-
-		// Check operation mode
-		switch (args[3]) {
-			case "encrypt":
-				op_code = 1;
-				break;
-			case "decrypt":
-				op_code = 2;
-				break;
-			case "verify":
-				op_code = 3;
-				break;
-			default:
-				System.err.println("Invalid Operation mode!\n"
-					+ "Valid options are: encrypt|decrypt|verify\n"
-					+ "Check configuration file");
-				throw new AssertionError();
-		}
+		
+		
 
 		try {
 
