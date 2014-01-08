@@ -24,9 +24,11 @@ public class DES_Cipher {
 
 	private static String operation;
 
-	private static String mode; // TODO
+	private static String mode;
 
-	private static String format; // TODO
+	private static String format;
+
+	private static long IV = 0x1234567890abcdefL;
 
 	private static File inFile, outFile, kFile;
 
@@ -115,13 +117,12 @@ public class DES_Cipher {
 					.println("Usage: java DES_Cipher input output key (encrypt|decrypt)\n");
 		}
 
-		// Init
 		inFile = new File(args[0]);
 		outFile = new File(args[1]);
 		kFile = new File(args[2]);
-		
+
 		getConfigProperties();
-		
+
 		// Check operation mode
 		switch (operation) {
 		case "Encrypt":
@@ -139,13 +140,25 @@ public class DES_Cipher {
 					+ "Check configuration file");
 			throw new AssertionError();
 		}
+		switch (mode) {
+		case "ECB":
+			ECBModeHandler();
+			break;
+		case "CBC":
+			CBCModeHandler();
+			break;
+		}
 
+	}
+
+	private static void ECBModeHandler() {
 		try {
 
 			// STAGE #1 - Key Scheduler
 			long key = readKey(kFile);
 			System.out.printf("Key: 0x%016x\n", key);
-			long pk = permutate(key, PC1);
+
+			long pk = permute(key, PC1);
 			int c_0 = getLowerBits(28, pk);
 			int d_0 = getHigherBits(28, pk);
 			generateKeys(c_0, d_0);
@@ -156,7 +169,7 @@ public class DES_Cipher {
 
 				// STAGE #2 - Encryption Algo.
 				System.out.printf("Block %2d: 0x%016x ", ++count, block);
-				long ip = permutate(block, IP);
+				long ip = permute(block, IP);
 				int l_0 = getLowerBits(32, ip);
 				int r_0 = getHigherBits(32, ip);
 
@@ -174,8 +187,79 @@ public class DES_Cipher {
 					r_prev = r_next;
 				}
 				long result = exchange(l_next, r_next);
-				result = permutate(result, IPINV);
+				result = permute(result, IPINV);
 
+				// display the processed 64bit block
+				System.out.printf("--> 0x%016x\n", result);
+				writeBlock(outFile, result);
+
+			}
+			plaintextFile.close();
+			outputFile.close();
+
+		} catch (FileNotFoundException ex) {
+			System.err.println(ex.getMessage());
+		} catch (IOException ex) {
+			System.err.println(ex.getMessage());
+		}
+
+	}
+
+	private static void CBCModeHandler() {
+		try {
+
+			// STAGE #1 - Key Scheduler
+			long key = readKey(kFile);
+			System.out.printf("Key: 0x%016x\n", key);
+			System.out.printf("IV: 0x%016x\n", IV);
+
+			long pk = permute(key, PC1);
+			int c_0 = getLowerBits(28, pk);
+			int d_0 = getHigherBits(28, pk);
+			generateKeys(c_0, d_0);
+			// debugKeys(); // TODO: add some debug flag / CLi arg.
+
+			int count = 0;
+			while (readBlock(inFile) != -1) {
+
+				if (op_code == 1) {
+
+					// -> block XOR IV
+					block ^= IV;
+				}
+
+				// STAGE #2 - Encryption Algo.
+				System.out.printf("Block %2d: 0x%016x ", ++count, block);
+				long ip = permute(block, IP);
+				int l_0 = getLowerBits(32, ip);
+				int r_0 = getHigherBits(32, ip);
+
+				// STAGE #3 - 16 Rounds
+				int l_next = 0, l_prev = l_0;
+				int r_next = 0, r_prev = r_0;
+				for (int i = 1, k; i <= 16; i++) {
+					k = (op_code == 1) ? i - 1 : 16 - i; // TODO: What if
+															// op_code == 3?
+					l_next = r_prev;
+					r_next = l_prev ^ f(r_prev, subKeys[k]);
+
+					// Update next halves
+					l_prev = l_next;
+					r_prev = r_next;
+				}
+				long result = exchange(l_next, r_next);
+				result = permute(result, IPINV);
+
+				switch (op_code) {
+				case 1:
+					// Increase IV to next iteration
+					IV = result;
+					break;
+				case 2:
+					// exclusive-OR
+					result ^= IV;
+					IV = block;
+				}
 				// display the processed 64bit block
 				System.out.printf("--> 0x%016x\n", result);
 				writeBlock(outFile, result);
@@ -206,7 +290,7 @@ public class DES_Cipher {
 	 * @return the selected bits from the input word. The LSB is at the leftmost
 	 *         position.
 	 */
-	private static long permutate(long v, byte[] table) {
+	private static long permute(long v, byte[] table) {
 		long result = 0;
 		for (int i = 0; i < table.length; i++) {
 			result |= ((v >>> (64 - table[i])) & 1) << (table.length - (i + 1));
@@ -308,7 +392,7 @@ public class DES_Cipher {
 			d_next = leftRotate(d_prev, v); // debug28BitsWord(d_next, i, "D",
 											// 2);
 			long k_i = concatenate(c_next, d_next);
-			subKeys[i - 1] = permutate(k_i, PC2);
+			subKeys[i - 1] = permute(k_i, PC2);
 			c_prev = c_next;
 			d_prev = d_next;
 		}
@@ -498,7 +582,7 @@ public class DES_Cipher {
 			result <<= 4;
 			result |= SB[i]; // SB[i] uses only 4 bits out of 8 - No sign ext.
 		}
-		result = (int) (permutate((long) result << 32, P) >>> 32);
+		result = (int) (permute((long) result << 32, P) >>> 32);
 		return result;
 	}
 
@@ -624,15 +708,14 @@ public class DES_Cipher {
 			prop.load(is);
 
 			// Debug printing, TODO: remove this section
-			System.out.println("DEBUG_Operation = "
-					+ prop.getProperty("Operation"));
-			System.out.println("DEBUG_Format = " + prop.getProperty("Format"));
-			System.out.println("DEBUG_Mode = " + prop.getProperty("Mode"));
+			System.out.println("Operation = " + prop.getProperty("Operation"));
+			System.out.println("Format = " + prop.getProperty("Format"));
+			System.out.println("Mode = " + prop.getProperty("Mode"));
 
-			// 
+			//
 			mode = prop.getProperty("Mode");
 			format = prop.getProperty("Format");
-			operation = prop.getProperty("Operation"); 
+			operation = prop.getProperty("Operation");
 
 		} catch (FileNotFoundException ex) {
 			System.err.println(ex.getMessage());
