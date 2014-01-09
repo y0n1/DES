@@ -1,4 +1,4 @@
 [CONFIG]
-Operation=Encrypt
-Format=ASCII|Radix64,
-Mode=CBC
+Operation=Verify
+Format=ASCII
+Mode=ECB
