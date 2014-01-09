@@ -156,7 +156,7 @@ public class DES_Cipher {
 		}
 		
 		// TODO: Check 'format' settings
-		switch (mode) {
+		switch (format) {
 			case "BASE64":
 				// Code for BASE64...
 				break;
