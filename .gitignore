@@ -8,6 +8,5 @@
 /dist/
 /build/
 /test/
-/src/base64Coder/
 build.xml
 manifest.mf
