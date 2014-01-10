@@ -10,6 +10,7 @@ package block_ciphers;
 import java.io.*;
 import java.util.Properties;
 
+
 /**
  * A modest implementation of DES cryptosystem.
  * <p>
@@ -192,13 +193,14 @@ public class DES_Cipher {
 
 			// STAGE #1 - Key Scheduler
 			long key = readKey(kFile);
+			// TODO: if base64 encode selected-> decode block to ASCII
 			System.out.printf("Key: 0x%016x\n", key);
 
 			long pk = permute(key, PC1);
 			int c_0 = getLowerBits(28, pk);
 			int d_0 = getHigherBits(28, pk);
 			generateKeys(c_0, d_0);
-			// debugKeys(); // TODO: add some debug flag / CLi arg.
+			// debugKeys(); // 
 
 			int count = 0;
 			while (readBlock(inFile) != -1) {
@@ -227,6 +229,8 @@ public class DES_Cipher {
 
 				// display the processed 64bit block
 				System.out.printf("--> 0x%016x\n", result);
+				//TODO: convert result to base64 - no matter which encoding is selected
+				
 				writeBlock(outFile, result);
 
 			}
@@ -247,6 +251,8 @@ public class DES_Cipher {
 
 			// STAGE #1 - Key Scheduler
 			long key = readKey(kFile);
+			
+			// TODO: if base64 encode selected-> decode block to ASCII
 			System.out.printf("Key: 0x%016x\n", key);
 			System.out.printf("IV: 0x%016x\n", IV);
 
@@ -301,6 +307,7 @@ public class DES_Cipher {
 				}
 				// display the processed 64bit block
 				System.out.printf("--> 0x%016x\n", result);
+				//TODO: convert result to base64 - no matter which encoding is selected
 				writeBlock(outFile, result);
 
 			}
