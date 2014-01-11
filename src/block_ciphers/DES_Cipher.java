@@ -9,6 +9,11 @@ package block_ciphers;
 
 import java.io.*;
 import java.util.Properties;
+import javax.xml.bind.DatatypeConverter;
+import sun.misc.BASE64Decoder;
+import sun.misc.BASE64Encoder;
+
+
 
 
 /**
@@ -127,6 +132,8 @@ public class DES_Cipher {
 		if (operation.equals("Verify")) {
 			verificationFile = new File("verification");
 			try {
+				PrintWriter pw = new PrintWriter("verification"); 
+				pw.close();
 				while (readBlock(outFile) != -1) {
 					writeBlock(verificationFile, block);
 				}
@@ -193,6 +200,8 @@ public class DES_Cipher {
 
 			// STAGE #1 - Key Scheduler
 			long key = readKey(kFile);
+			
+			
 			// TODO: if base64 encode selected-> decode block to ASCII
 			System.out.printf("Key: 0x%016x\n", key);
 
@@ -200,7 +209,7 @@ public class DES_Cipher {
 			int c_0 = getLowerBits(28, pk);
 			int d_0 = getHigherBits(28, pk);
 			generateKeys(c_0, d_0);
-			// debugKeys(); // 
+			// debugKeys(); //
 
 			int count = 0;
 			while (readBlock(inFile) != -1) {
@@ -229,8 +238,10 @@ public class DES_Cipher {
 
 				// display the processed 64bit block
 				System.out.printf("--> 0x%016x\n", result);
-				//TODO: convert result to base64 - no matter which encoding is selected
-				
+				// TODO: convert result to base64 - no matter which encoding is
+				// selected
+				//String str = printFloat(result);
+
 				writeBlock(outFile, result);
 
 			}
@@ -251,7 +262,7 @@ public class DES_Cipher {
 
 			// STAGE #1 - Key Scheduler
 			long key = readKey(kFile);
-			
+
 			// TODO: if base64 encode selected-> decode block to ASCII
 			System.out.printf("Key: 0x%016x\n", key);
 			System.out.printf("IV: 0x%016x\n", IV);
@@ -260,7 +271,7 @@ public class DES_Cipher {
 			int c_0 = getLowerBits(28, pk);
 			int d_0 = getHigherBits(28, pk);
 			generateKeys(c_0, d_0);
-			// debugKeys(); // TODO: add some debug flag / CLi arg.
+			// debugKeys(); 
 
 			int count = 0;
 			while (readBlock(inFile) != -1) {
@@ -283,7 +294,7 @@ public class DES_Cipher {
 				int l_next = 0, l_prev = l_0;
 				int r_next = 0, r_prev = r_0;
 				for (int i = 1, k; i <= 16; i++) {
-					k = (op_code == 1) ? i - 1 : 16 - i; 
+					k = (op_code == 1) ? i - 1 : 16 - i;
 					l_next = r_prev;
 					r_next = l_prev ^ f(r_prev, subKeys[k]);
 
@@ -307,7 +318,8 @@ public class DES_Cipher {
 				}
 				// display the processed 64bit block
 				System.out.printf("--> 0x%016x\n", result);
-				//TODO: convert result to base64 - no matter which encoding is selected
+				// TODO: convert result to base64 - no matter which encoding is
+				// selected
 				writeBlock(outFile, result);
 
 			}
@@ -759,6 +771,7 @@ public class DES_Cipher {
 			System.err.println("I/O Error: Couldn't write current block.");
 		}
 	}
+
 	/**
 	 * Sets properties from config file
 	 */
@@ -769,12 +782,12 @@ public class DES_Cipher {
 
 			InputStream is = new FileInputStream(fileName);
 			prop.load(is);
-			
+
 			// Print properties
 			System.out.println("Operation = " + prop.getProperty("Operation"));
 			System.out.println("Format = " + prop.getProperty("Format"));
 			System.out.println("Mode = " + prop.getProperty("Mode"));
-			
+
 			// Load properties
 			mode = prop.getProperty("Mode");
 			format = prop.getProperty("Format");
@@ -787,23 +800,25 @@ public class DES_Cipher {
 		}
 
 	}
+
 	/**
-	 * Reads both outputFile and verificationFile into strings and compare between them.
+	 * Reads both outputFile and verificationFile into strings and compare
+	 * between them.
 	 */
-	private static void encryptionVerification(){
+	private static void encryptionVerification() {
 		String s1 = "";
 		String s2 = "";
 		String outFileBlock = "", verificationFileBlock = "";
-		
+
 		try {
 			BufferedReader bf1 = new BufferedReader(new FileReader(outFile));
 			BufferedReader bf2 = new BufferedReader(new FileReader(
 					verificationFile));
 
-			while ((outFileBlock = bf1.readLine()) != null){
+			while ((outFileBlock = bf1.readLine()) != null) {
 				s1 += outFileBlock;
 			}
-			while ((verificationFileBlock = bf2.readLine()) != null){
+			while ((verificationFileBlock = bf2.readLine()) != null) {
 				s2 += verificationFileBlock;
 			}
 			bf1.close();
@@ -816,7 +831,6 @@ public class DES_Cipher {
 		} else {
 			System.out.println("Verification failed!");
 		}
-		
 
 	}
 
