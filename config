@@ -1,4 +1,4 @@
 [CONFIG]
 Operation=Verify
-Format=ASCII
-Mode=ECB
+Format=BASE64
+Mode=CBC

@@ -9,12 +9,10 @@ package block_ciphers;
 
 import java.io.*;
 import java.util.Properties;
-import javax.xml.bind.DatatypeConverter;
+
 import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
 
-
-
+import com.sun.xml.internal.messaging.saaj.util.Base64;
 
 /**
  * A modest implementation of DES cryptosystem.
@@ -40,6 +38,8 @@ public class DES_Cipher {
 	private static File inFile, outFile, kFile, verificationFile;
 
 	private static RandomAccessFile keyFile, plaintextFile, outputFile;
+
+	private static boolean is64BaseEncoding;
 
 	private static long[] subKeys;
 
@@ -126,20 +126,15 @@ public class DES_Cipher {
 		inFile = new File(args[0]);
 		outFile = new File(args[1]);
 		kFile = new File(args[2]);
+		// verificationFile = new File("verification");
+		// //Erase verification file content
+		// PrintWriter pw = new PrintWriter("verification");
+		// pw.close();
 
 		getConfigProperties();
 
 		if (operation.equals("Verify")) {
-			verificationFile = new File("verification");
-			try {
-				PrintWriter pw = new PrintWriter("verification"); 
-				pw.close();
-				while (readBlock(outFile) != -1) {
-					writeBlock(verificationFile, block);
-				}
-			} catch (FileNotFoundException ex) {
-				System.err.println(ex.getMessage());
-			}
+			initiateVerificationFile();
 		}
 
 		// Check 'operation' settings
@@ -159,6 +154,19 @@ public class DES_Cipher {
 					+ "Check configuration file");
 			throw new AssertionError();
 		}
+		switch (format) {
+		case "BASE64":
+			is64BaseEncoding = true;
+			break;
+		case "ASCII":
+			is64BaseEncoding = false;
+			break;
+		default:
+			System.err.println("Invalid settings: 'Format'\n"
+					+ "Valid options are: ASCII|BASE64\n"
+					+ "Check configuration file");
+			throw new AssertionError();
+		}
 
 		// Check 'mode' settings
 		switch (mode) {
@@ -175,20 +183,8 @@ public class DES_Cipher {
 			throw new AssertionError();
 		}
 
-		// TODO: Check 'format' settings
-		switch (format) {
-		case "BASE64":
-			// Code for BASE64...
-			break;
-		case "ASCII":
-			// Code for ASCII...
-			break;
-		default:
-			System.err.println("Invalid settings: 'Format'\n"
-					+ "Valid options are: ASCII|BASE64\n"
-					+ "Check configuration file");
-			throw new AssertionError();
-		}
+	
+		// Create we want to Verify our encryption
 		if (operation.equals("Verify")) {
 			encryptionVerification();
 		}
@@ -200,9 +196,7 @@ public class DES_Cipher {
 
 			// STAGE #1 - Key Scheduler
 			long key = readKey(kFile);
-			
-			
-			// TODO: if base64 encode selected-> decode block to ASCII
+
 			System.out.printf("Key: 0x%016x\n", key);
 
 			long pk = permute(key, PC1);
@@ -238,11 +232,12 @@ public class DES_Cipher {
 
 				// display the processed 64bit block
 				System.out.printf("--> 0x%016x\n", result);
-				// TODO: convert result to base64 - no matter which encoding is
-				// selected
-				//String str = printFloat(result);
 
-				writeBlock(outFile, result);
+				if (operation.equals("Verify")) {
+					writeBlock(verificationFile, result);
+				} else {
+					writeBlock(outFile, result);
+				}
 
 			}
 			plaintextFile.close();
@@ -263,7 +258,6 @@ public class DES_Cipher {
 			// STAGE #1 - Key Scheduler
 			long key = readKey(kFile);
 
-			// TODO: if base64 encode selected-> decode block to ASCII
 			System.out.printf("Key: 0x%016x\n", key);
 			System.out.printf("IV: 0x%016x\n", IV);
 
@@ -271,7 +265,7 @@ public class DES_Cipher {
 			int c_0 = getLowerBits(28, pk);
 			int d_0 = getHigherBits(28, pk);
 			generateKeys(c_0, d_0);
-			// debugKeys(); 
+			// debugKeys();
 
 			int count = 0;
 			while (readBlock(inFile) != -1) {
@@ -318,9 +312,12 @@ public class DES_Cipher {
 				}
 				// display the processed 64bit block
 				System.out.printf("--> 0x%016x\n", result);
-				// TODO: convert result to base64 - no matter which encoding is
-				// selected
-				writeBlock(outFile, result);
+
+				if (operation.equals("Verify")) {
+					writeBlock(verificationFile, result);
+				} else {
+					writeBlock(outFile, result);
+				}
 
 			}
 			plaintextFile.close();
@@ -587,7 +584,17 @@ public class DES_Cipher {
 		int bytesRead = 0;
 		try {
 			bytesRead = plaintextFile.read(buffer);
-			block = parse64BitWord(buffer);
+			if (is64BaseEncoding) {
+				String str = new String(buffer, "UTF-8");
+				// byte[] bufferInASCII = Base64.base64Decode(arg0);
+				BASE64Decoder decoder = new BASE64Decoder();
+				byte[] decodedBytes = decoder.decodeBuffer(str);
+				block = parse64BitWord(decodedBytes);
+			} else {
+
+				block = parse64BitWord(buffer);
+			}
+
 		} catch (IOException ex) {
 			System.err.println("I/O Error: Failed to fetch next block!");
 		}
@@ -766,7 +773,13 @@ public class DES_Cipher {
 			outputFile = new RandomAccessFile(outFile, "rw");
 		}
 		try {
-			outputFile.writeLong(result);
+
+			// Convert result into base64 byte array
+			byte[] resultInBase64 = Base64.encode(String.valueOf(result)
+					.getBytes());
+			// outputFile.writeLong(result);
+
+			outputFile.write(resultInBase64);
 		} catch (IOException ex) {
 			System.err.println("I/O Error: Couldn't write current block.");
 		}
@@ -815,17 +828,27 @@ public class DES_Cipher {
 			BufferedReader bf2 = new BufferedReader(new FileReader(
 					verificationFile));
 
+			// Append outFile to S1
 			while ((outFileBlock = bf1.readLine()) != null) {
 				s1 += outFileBlock;
 			}
+
+			// Append verificationFile to s2
 			while ((verificationFileBlock = bf2.readLine()) != null) {
 				s2 += verificationFileBlock;
 			}
 			bf1.close();
 			bf2.close();
+
+			// To avoid bugs - delete verification file
+			verificationFile.delete();
+
 		} catch (IOException ex) {
 			System.err.println(ex.getMessage());
 		}
+
+		// if s1 and s2 are equals - than so it is about verification file and
+		// output file
 		if (s1.equals(s2)) {
 			System.out.println("Verification succseed!");
 		} else {
@@ -834,4 +857,20 @@ public class DES_Cipher {
 
 	}
 
+	/**
+	 * Initialize a new file for verification propose (erase footprints of old
+	 * encryptions)
+	 */
+	private static void initiateVerificationFile() {
+		verificationFile = new File("verification");
+		try {
+
+			// Make sure that verification file is empty (delete content)
+			PrintWriter pw = new PrintWriter("verification");
+			pw.close();
+
+		} catch (FileNotFoundException ex) {
+			System.err.println(ex.getMessage());
+		}
+	}
 }
