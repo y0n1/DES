@@ -759,22 +759,23 @@ public class DES_Cipher {
 			System.err.println("I/O Error: Couldn't write current block.");
 		}
 	}
-
+	/**
+	 * Sets properties from config file
+	 */
 	private static void getConfigProperties() {
 		String fileName = "config";
 		Properties prop = new Properties();
 		try {
 
-			// Load properties from config file
 			InputStream is = new FileInputStream(fileName);
 			prop.load(is);
-
-			// Debug printing, TODO: remove this section
+			
+			// Print properties
 			System.out.println("Operation = " + prop.getProperty("Operation"));
 			System.out.println("Format = " + prop.getProperty("Format"));
 			System.out.println("Mode = " + prop.getProperty("Mode"));
-
-			//
+			
+			// Load properties
 			mode = prop.getProperty("Mode");
 			format = prop.getProperty("Format");
 			operation = prop.getProperty("Operation");
@@ -786,7 +787,7 @@ public class DES_Cipher {
 		}
 
 	}
-	/*
+	/**
 	 * Reads both outputFile and verificationFile into strings and compare between them.
 	 */
 	private static void encryptionVerification(){
@@ -799,10 +800,14 @@ public class DES_Cipher {
 			BufferedReader bf2 = new BufferedReader(new FileReader(
 					verificationFile));
 
-			while ((outFileBlock = bf1.readLine()) != null)
+			while ((outFileBlock = bf1.readLine()) != null){
 				s1 += outFileBlock;
-			while ((verificationFileBlock = bf2.readLine()) != null)
+			}
+			while ((verificationFileBlock = bf2.readLine()) != null){
 				s2 += verificationFileBlock;
+			}
+			bf1.close();
+			bf2.close();
 		} catch (IOException ex) {
 			System.err.println(ex.getMessage());
 		}
@@ -811,6 +816,7 @@ public class DES_Cipher {
 		} else {
 			System.out.println("Verification failed!");
 		}
+		
 
 	}
 
