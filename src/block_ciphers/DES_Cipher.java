@@ -786,27 +786,30 @@ public class DES_Cipher {
 		}
 
 	}
+	/*
+	 * Reads both outputFile and verificationFile into strings and compare between them.
+	 */
 	private static void encryptionVerification(){
 		String s1 = "";
 		String s2 = "";
-		String y = "", z = "";
+		String outFileBlock = "", verificationFileBlock = "";
 		
 		try {
 			BufferedReader bf1 = new BufferedReader(new FileReader(outFile));
 			BufferedReader bf2 = new BufferedReader(new FileReader(
 					verificationFile));
 
-			while ((y = bf1.readLine()) != null)
-				s1 += y;
-			while ((z = bf2.readLine()) != null)
-				s2 += z;
+			while ((outFileBlock = bf1.readLine()) != null)
+				s1 += outFileBlock;
+			while ((verificationFileBlock = bf2.readLine()) != null)
+				s2 += verificationFileBlock;
 		} catch (IOException ex) {
 			System.err.println(ex.getMessage());
 		}
 		if (s1.equals(s2)) {
-			System.out.println("Your encryption has been verified");
+			System.out.println("Verification succseed!");
 		} else {
-			System.out.println("Your encryption has NOT been verified");
+			System.out.println("Verification failed!");
 		}
 
 	}
