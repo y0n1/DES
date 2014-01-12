@@ -10,13 +10,13 @@ package block_ciphers;
 import java.io.*;
 import java.util.Properties;
 import sun.misc.BASE64Decoder;
-import com.sun.xml.internal.messaging.saaj.util.Base64;
+import sun.misc.BASE64Encoder;
 
 /**
  * A modest implementation of DES cryptosystem.
  * <p>
  * <p>
- * 
+ *
  * @author Yoni Kilzi & Nimrod Shlagman
  */
 public class DES_Cipher {
@@ -334,7 +334,7 @@ public class DES_Cipher {
 	 * specified by the given table.
 	 * <p>
 	 * <p>
-	 * 
+	 *
 	 * @param v
 	 *            - the input word to select/permutate its bits.
 	 * @param table
@@ -356,7 +356,7 @@ public class DES_Cipher {
 	 * Utility method for getting the low bits from a word of n-bits
 	 * <p>
 	 * <p>
-	 * 
+	 *
 	 * @param nBits
 	 *            - the number of bits in the word
 	 * @param word
@@ -376,7 +376,7 @@ public class DES_Cipher {
 	 * Utility method for getting the high bits from a word of n-bits
 	 * <p>
 	 * <p>
-	 * 
+	 *
 	 * @param nBits
 	 *            - the number of bits in the word
 	 * @param word
@@ -393,7 +393,7 @@ public class DES_Cipher {
 	 * Rotates left a 28bit word.
 	 * <p>
 	 * <p>
-	 * 
+	 *
 	 * @param val
 	 *            - the 28bits word.
 	 * @param distance
@@ -414,7 +414,7 @@ public class DES_Cipher {
 	 * Performs concatenation of the two C and D parts of each sub-key.
 	 * <p>
 	 * <p>
-	 * 
+	 *
 	 * @param c_i
 	 * @param d_i
 	 *            <p>
@@ -434,7 +434,7 @@ public class DES_Cipher {
 	 * Generates the 16 sub-keys. Each key is a 48bit long word.
 	 * <p>
 	 * <p>
-	 * 
+	 *
 	 * @param c_0
 	 *            - the lowest 28 bits corresponding to the original key.
 	 * @param d_0
@@ -472,7 +472,7 @@ public class DES_Cipher {
 	 * Prints the contents of a 28bit word.
 	 * <p>
 	 * <p>
-	 * 
+	 *
 	 * @param bitsWord
 	 *            - a 28bit word such that its LSB is at the leftmost position.
 	 * @param idx
@@ -503,7 +503,7 @@ public class DES_Cipher {
 	 * Prints the contents of a 48bit word.
 	 * <p>
 	 * <p>
-	 * 
+	 *
 	 * @param bitsWord
 	 *            - a 48bit word such that its LSB is at the leftmost position.
 	 * @param idx
@@ -533,7 +533,7 @@ public class DES_Cipher {
 	 * Reads the key used to encode/decode the message from the specified file.
 	 * <p>
 	 * <p>
-	 * 
+	 *
 	 * @param kFile
 	 *            - The file containing the key. The key must be an hexadecimal
 	 *            word of length 16.
@@ -561,7 +561,7 @@ public class DES_Cipher {
 	 * Reads a 64-bit block (8 bytes) from the file containing the message.
 	 * <p>
 	 * <p>
-	 * 
+	 *
 	 * @param pFile
 	 *            the file containing the message.
 	 *            <p>
@@ -606,7 +606,7 @@ public class DES_Cipher {
 	 * details.
 	 * <p>
 	 * <p>
-	 * 
+	 *
 	 * @param r_prev
 	 *            - a 32bit word.
 	 * @param key
@@ -666,7 +666,7 @@ public class DES_Cipher {
 	 * Exchanges between the 32 lowest bits and the 32 highest bits.
 	 * <p>
 	 * <p>
-	 * 
+	 *
 	 * @param l
 	 *            - the 32 lowest bits
 	 * @param r
@@ -686,7 +686,7 @@ public class DES_Cipher {
 	 * Expands from 32bit to 48bit word as per E table.
 	 * <p>
 	 * <p>
-	 * 
+	 *
 	 * @param r_prev
 	 *            - the 32bit word.
 	 *            <p>
@@ -707,7 +707,7 @@ public class DES_Cipher {
 	 * Utility method that facilitates access to the n-th bit of a given word.
 	 * <p>
 	 * <p>
-	 * 
+	 *
 	 * @param n
 	 *            - a value in the mathematical range: [1,32];
 	 * @param w
@@ -728,7 +728,7 @@ public class DES_Cipher {
 	 * Utility method that facilitates access to the n-th bit of a given word.
 	 * <p>
 	 * <p>
-	 * 
+	 *
 	 * @param n
 	 *            - a value in the mathematical range: [1,64];
 	 * @param w
@@ -750,7 +750,7 @@ public class DES_Cipher {
 	 * the LSB is at the leftmost position.
 	 * <p>
 	 * <p>
-	 * 
+	 *
 	 * @param buffer
 	 *            a buffer containing 8 bytes.
 	 *            <p>
@@ -775,8 +775,10 @@ public class DES_Cipher {
 		try {
 
 			// Convert result into base64 byte array
-			byte[] resultInBase64 = Base64.encode(String.valueOf(result)
-					.getBytes());
+			//byte[] resultInBase64 = Base64.encode(String.valueOf(result).getBytes());
+			BASE64Encoder enc64 = new BASE64Encoder();
+			byte[] arrResult = String.valueOf(result).getBytes();
+			byte[] resultInBase64 = enc64.encode(arrResult).getBytes();
 			// outputFile.writeLong(result);
 
 			outputFile.write(resultInBase64);
