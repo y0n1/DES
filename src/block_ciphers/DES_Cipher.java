@@ -9,9 +9,7 @@ package block_ciphers;
 
 import java.io.*;
 import java.util.Properties;
-
 import sun.misc.BASE64Decoder;
-
 import com.sun.xml.internal.messaging.saaj.util.Base64;
 
 /**
@@ -126,16 +124,8 @@ public class DES_Cipher {
 		inFile = new File(args[0]);
 		outFile = new File(args[1]);
 		kFile = new File(args[2]);
-		// verificationFile = new File("verification");
-		// //Erase verification file content
-		// PrintWriter pw = new PrintWriter("verification");
-		// pw.close();
 
 		getConfigProperties();
-
-		if (operation.equals("Verify")) {
-			initiateVerificationFile();
-		}
 
 		// Check 'operation' settings
 		switch (operation) {
@@ -146,13 +136,19 @@ public class DES_Cipher {
 			op_code = 2;
 			break;
 		case "Verify":
-			op_code = 1;
+			op_code = 3;
 			break;
 		default:
 			System.err.println("Invalid settings: 'Operation'\n"
 					+ "Valid options are: encrypt|decrypt|verify\n"
 					+ "Check configuration file");
 			throw new AssertionError();
+		}
+		if (op_code == 1) {
+			// Delete output file content
+			eraseOutFile();
+		} else if (op_code == 3) {
+			initiateVerificationFile();
 		}
 		switch (format) {
 		case "BASE64":
@@ -183,9 +179,8 @@ public class DES_Cipher {
 			throw new AssertionError();
 		}
 
-	
 		// Create we want to Verify our encryption
-		if (operation.equals("Verify")) {
+		if (op_code == 3) {
 			encryptionVerification();
 		}
 
@@ -218,7 +213,7 @@ public class DES_Cipher {
 				int l_next = 0, l_prev = l_0;
 				int r_next = 0, r_prev = r_0;
 				for (int i = 1, k; i <= 16; i++) {
-					k = (op_code == 1) ? i - 1 : 16 - i;
+					k = ((op_code == 1) || (op_code == 3)) ? i - 1 : 16 - i;
 
 					l_next = r_prev;
 					r_next = l_prev ^ f(r_prev, subKeys[k]);
@@ -233,7 +228,7 @@ public class DES_Cipher {
 				// display the processed 64bit block
 				System.out.printf("--> 0x%016x\n", result);
 
-				if (operation.equals("Verify")) {
+				if (op_code == 3) {
 					writeBlock(verificationFile, result);
 				} else {
 					writeBlock(outFile, result);
@@ -270,7 +265,7 @@ public class DES_Cipher {
 			int count = 0;
 			while (readBlock(inFile) != -1) {
 
-				if (op_code == 1) {
+				if ((op_code == 1) || (op_code == 3)) {
 
 					// -> block XOR IV
 					block ^= IV;
@@ -288,7 +283,7 @@ public class DES_Cipher {
 				int l_next = 0, l_prev = l_0;
 				int r_next = 0, r_prev = r_0;
 				for (int i = 1, k; i <= 16; i++) {
-					k = (op_code == 1) ? i - 1 : 16 - i;
+					k = ((op_code == 1) || (op_code == 3)) ? i - 1 : 16 - i;
 					l_next = r_prev;
 					r_next = l_prev ^ f(r_prev, subKeys[k]);
 
@@ -309,6 +304,9 @@ public class DES_Cipher {
 					result ^= IV;
 					IV = temp;
 					break;
+				case 3:
+					// Same as Encrypt
+					IV = result;
 				}
 				// display the processed 64bit block
 				System.out.printf("--> 0x%016x\n", result);
@@ -585,11 +583,13 @@ public class DES_Cipher {
 		try {
 			bytesRead = plaintextFile.read(buffer);
 			if (is64BaseEncoding) {
+
+				//
 				String str = new String(buffer, "UTF-8");
-				// byte[] bufferInASCII = Base64.base64Decode(arg0);
 				BASE64Decoder decoder = new BASE64Decoder();
 				byte[] decodedBytes = decoder.decodeBuffer(str);
 				block = parse64BitWord(decodedBytes);
+
 			} else {
 
 				block = parse64BitWord(buffer);
@@ -873,4 +873,16 @@ public class DES_Cipher {
 			System.err.println(ex.getMessage());
 		}
 	}
+
+	private static void eraseOutFile() {
+		PrintWriter pw;
+		try {
+			pw = new PrintWriter(outFile);
+			pw.close();
+		} catch (FileNotFoundException ex) {
+
+			System.err.println(ex.getMessage());
+		}
+	}
+
 }
