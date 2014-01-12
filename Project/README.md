@@ -11,9 +11,19 @@ SECTIONS:
 
 ==============================================
 
-a. Usage: 
+a. Usage:
+We supply an executable jar file (DES.jar) which supports the following sintax:
+
+	DES.jar input output key
+	
+Each argument should be self explanatory, and samples for the 'input' argument are provided
+whithin the the 'Examples' folder. The 'output' argument is mandatory and specifies the absolute path
+for the requested output file.
+
 
 b. How to use the 'config' file:
+In order to change the program's operation mode the following settings should be modified in the attached 
+configuration file.
 
 1. OPERATION
 Inorder to encrypt using our des mechanism please enter "Encrypt" under Operation:
