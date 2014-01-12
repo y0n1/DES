@@ -118,7 +118,7 @@ public class DES_Cipher {
 
 		// Check arguments
 		if (args.length < 3)
-			System.out.println("Usage: java DES_Cipher input output key\n");
+			System.err.println("Usage: java DES_Cipher input output key\n");
 
 		// Init.
 		inFile = new File(args[0]);
@@ -769,19 +769,23 @@ public class DES_Cipher {
 
 	private static void writeBlock(File outFile, long result)
 			throws FileNotFoundException {
-		if (outputFile == null) {
+		if (outputFile == null)
 			outputFile = new RandomAccessFile(outFile, "rw");
-		}
+
 		try {
 
 			// Convert result into base64 byte array
-			//byte[] resultInBase64 = Base64.encode(String.valueOf(result).getBytes());
-			BASE64Encoder enc64 = new BASE64Encoder();
-			byte[] arrResult = String.valueOf(result).getBytes();
-			byte[] resultInBase64 = enc64.encode(arrResult).getBytes();
-			// outputFile.writeLong(result);
+			if (is64BaseEncoding) {
+				BASE64Encoder enc64 = new BASE64Encoder();
+				byte[] arrResult = String.valueOf(result).getBytes();
+				byte[] resultInBase64 = enc64.encode(arrResult).getBytes();
+				outputFile.write(resultInBase64);
+			} else {
 
-			outputFile.write(resultInBase64);
+				// Leave it as ASCII...
+				outputFile.writeLong(result);
+			}
+
 		} catch (IOException ex) {
 			System.err.println("I/O Error: Couldn't write current block.");
 		}
